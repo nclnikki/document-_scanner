@@ -165,25 +165,16 @@ def main():
                 with col2:
                     st.subheader("Warped Result")
                     st.image(warped, channels="BGR")
-            
-            # Let user choose which version to save
-            version_to_save = st.radio(
-                "Select version to save:",
-                ("Original", "Scanned Document")
-            )
-            
+
             if st.button("Save Image"):
-                # Convert the selected version to PIL Image
-                if version_to_save == "Original":
-                    img_to_save = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
+
+                if apply_enhancement:
+                    # For enhanced document (grayscale)
+                    img_to_save = Image.fromarray(st.session_state.scanned_image)
                 else:
-                    if apply_enhancement:
-                        # For enhanced document (grayscale)
-                        img_to_save = Image.fromarray(st.session_state.scanned_image)
-                    else:
-                        # For warped image (BGR)
-                        img_to_save = Image.fromarray(cv2.cvtColor(st.session_state.scanned_image, cv2.COLOR_BGR2RGB))
-                
+                    # For warped image (BGR)
+                    img_to_save = Image.fromarray(cv2.cvtColor(st.session_state.scanned_image, cv2.COLOR_BGR2RGB))
+            
                 # Add to session state
                 img_byte_arr = io.BytesIO()
                 img_to_save.save(img_byte_arr, format='PNG')
@@ -195,69 +186,6 @@ def main():
         else:
             st.error("No document detected. Please ensure your document is clearly visible against the background.")
             st.image(cv_img, channels="BGR")
-            
-            # Allow saving original anyway
-            if st.button("Save Original Image"):
-                img_to_save = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
-                img_byte_arr = io.BytesIO()
-                img_to_save.save(img_byte_arr, format='PNG')
-                img_byte_arr = img_byte_arr.getvalue()
-                
-                st.session_state.captured_images.append(img_byte_arr)
-                st.success(f"Image saved! Total images: {len(st.session_state.captured_images)}")
-    
-    # Adjust document detection parameters if needed
-    with st.sidebar.expander("Advanced Settings"):
-        st.caption("If document detection is not working well, try adjusting these parameters")
-        canny_low = st.slider("Canny Edge Low Threshold", 10, 200, 75)
-        canny_high = st.slider("Canny Edge High Threshold", 50, 400, 200)
-        contour_approximation = st.slider("Contour Approximation", 1, 5, 2) / 100
-        
-        if st.button("Re-detect Document") and st.session_state.current_image is not None:
-            # Custom function with adjusted parameters
-            def find_document_with_params(image):
-                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-                edged = cv2.Canny(blurred, canny_low, canny_high)
-                
-                contours, _ = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                contours = sorted(contours, key=cv2.contourArea, reverse=True)
-                
-                document_contour = None
-                for contour in contours:
-                    perimeter = cv2.arcLength(contour, True)
-                    approx = cv2.approxPolyDP(contour, contour_approximation * perimeter, True)
-                    
-                    if len(approx) == 4:
-                        document_contour = approx
-                        break
-                
-                return document_contour, edged
-            
-            document_contour, edged = find_document_with_params(st.session_state.current_image)
-            
-            # Show the edge detection result to help users adjust parameters
-            st.sidebar.image(edged, caption="Edge Detection Result", width=300)
-            
-            if document_contour is not None:
-                display_img = st.session_state.current_image.copy()
-                cv2.drawContours(display_img, [document_contour], -1, (0, 255, 0), 2)
-                
-                document_pts = document_contour.reshape(4, 2)
-                warped = four_point_transform(st.session_state.current_image, document_pts)
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.subheader("Re-detected Document")
-                    st.image(display_img, channels="BGR")
-                with col2:
-                    st.subheader("Warped Result")
-                    st.image(warped, channels="BGR")
-                
-                # Update scanned image
-                st.session_state.scanned_image = warped
-            else:
-                st.error("Still couldn't detect document with new parameters.")
 
     # Show captured images
     if st.session_state.captured_images:
