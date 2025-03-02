@@ -106,9 +106,6 @@ def enhance_document(image):
 def main():
     st.title("Document Scanner App")
     
-    # Create sidebar for settings and controls
-    st.sidebar.title("Settings")
-    
     # Initialize session state for captured images
     if 'captured_images' not in st.session_state:
         st.session_state.captured_images = []
@@ -137,6 +134,9 @@ def main():
             # Transform the image to get the document perspective
             document_pts = document_contour.reshape(4, 2)
             warped = four_point_transform(cv_img, document_pts)
+
+            # Create sidebar for settings and controls
+            st.sidebar.title("Settings")
             
             # Image enhancement options
             st.sidebar.subheader("Document Enhancement")
