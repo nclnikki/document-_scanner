@@ -94,7 +94,7 @@ def enhance_document(image):
     
     # Apply adaptive thresholding
     thresh = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 7
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 7
     )
     
     # Apply some morphological operations to clean up the image
